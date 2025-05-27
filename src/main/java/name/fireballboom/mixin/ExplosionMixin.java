@@ -69,20 +69,20 @@ public abstract class ExplosionMixin {
     )
     void changeExplosionKnockBack(CallbackInfo ci){
         if(source() instanceof LargeFireball) {
-            level().gameEvent(this.source(), GameEvent.EXPLODE, new Vec3(this.x(), this.y(), this.z()));
-            float q = 7f;
-            int k = Mth.floor(this.x() - q - 1.0);
-            int lx = Mth.floor(this.x() + q + 1.0);
-            int r = Mth.floor(this.y() - q - 1.0);
-            int s = Mth.floor(this.y() + q + 1.0);
-            int t = Mth.floor(this.z() - q - 1.0);
-            int u = Mth.floor(this.z() + q + 1.0);
-            List<Entity> list = this.level().getEntities(this.source(), new AABB(k, r, t, lx, s, u));
+            Vec3 explosionPos = new Vec3(x(), y(), z());
+            level().gameEvent(this.source(), GameEvent.EXPLODE, explosionPos);
+            float radius = 7f;
+            int minX = Mth.floor(this.x() - radius - 1.0);
+            int maxX = Mth.floor(this.x() + radius + 1.0);
+            int minY = Mth.floor(this.y() - radius - 1.0);
+            int maxY = Mth.floor(this.y() + radius + 1.0);
+            int minZ = Mth.floor(this.z() - radius - 1.0);
+            int maxZ = Mth.floor(this.z() + radius + 1.0);
+            List<Entity> list = this.level().getEntities(this.source(), new AABB(minX, minY, minZ, maxX, maxY, maxZ));
             for (int v = 0; v < list.size(); v++) {
                 Entity instance = list.get(v);
                 if(!instance.ignoreExplosion() && !(instance instanceof LargeFireball)) {
                     Vec3 playerPos = instance.position();
-                    Vec3 explosionPos = new Vec3(x(), y(), z());
                     Vec3 diff = playerPos.add(explosionPos.scale(-1));
                     Vec3 origin = instance.getDeltaMovement();
                     horizontalDistance = diff.horizontalDistance();

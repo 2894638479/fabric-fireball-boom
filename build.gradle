@@ -24,7 +24,6 @@ loom {
 	mods {
 		"fireball-boom" {
 			sourceSet sourceSets.main
-			sourceSet sourceSets.client
 		}
 	}
 

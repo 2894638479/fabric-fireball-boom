@@ -14,7 +14,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -69,7 +68,7 @@ public abstract class ExplosionMixin {
 
     @Inject(
             method = "explode",
-            at = @At(value = "HEAD"),
+            at = @At("HEAD"),
             cancellable = true
     )
     void changeExplosionKnockBack(CallbackInfo ci){
@@ -87,7 +86,7 @@ public abstract class ExplosionMixin {
             for (int v = 0; v < list.size(); v++) {
                 Entity instance = list.get(v);
                 if(!instance.ignoreExplosion() && !(instance instanceof LargeFireball)) {
-                    Vec3 playerPos = instance.position().add(0,1,0);
+                    Vec3 playerPos = instance.position().add(0, 1, 0);
                     Vec3 diff = playerPos.add(explosionPos.scale(-1));
                     Vec3 origin = instance.getDeltaMovement();
                     horizontalDistance = diff.horizontalDistance();
@@ -95,6 +94,10 @@ public abstract class ExplosionMixin {
                     distance = diff.length();
                     double hKb = horizontalKb();
                     double yKb = verticalKb();
+                    if(hKb == 0 && yKb == 0){
+                        ci.cancel();
+                        return;
+                    }
                     if (!instance.onGround()) {
                         hKb *= horizontalKbJumpingScale();
                     }

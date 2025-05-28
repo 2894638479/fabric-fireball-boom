@@ -3,9 +3,9 @@
 	"id": "fireball-boom",
 	"version": "${version}",
 	"name": "Fireball Boom",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "仿布吉岛烈焰弹",
 	"authors": [
-		"Me!"
+		"2894638479"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",

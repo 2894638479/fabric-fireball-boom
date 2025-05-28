@@ -14,7 +14,13 @@
 	"license": "CC0-1.0",
 	"icon": "assets/fireball-boom/icon.png",
 	"environment": "*",
-	"entrypoints": {},
+	"entrypoints": {
+		"client": [
+			{
+				"value": "name.fireballboom.PacketReceiver"
+			}
+		]
+	},
 	"mixins": [
 		"fireball-boom.mixins.json"
 	],

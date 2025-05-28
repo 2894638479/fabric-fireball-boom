@@ -1,5 +1,10 @@
 package name.fireballboom.mixin;
 
+import io.netty.buffer.Unpooled;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -101,7 +106,11 @@ public abstract class ExplosionMixin {
                     Vec3 knockBack = finalSpeed.add(origin.scale(-1));
                     Vec3 result = origin.add(knockBack);
                     instance.setDeltaMovement(result);
-
+                    if (instance instanceof ServerPlayer player && !player.isSpectator()){
+                        ServerPlayNetworking.send(player,
+                                new ResourceLocation("fireball-boom","fireball_play_hurt_animation"),
+                                new FriendlyByteBuf(Unpooled.buffer()));
+                    }
                     if (instance instanceof Player player && !player.isSpectator() && (!player.isCreative() || !player.getAbilities().flying)) {
                         hitPlayers.put(player,knockBack);
                     }

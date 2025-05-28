@@ -22,11 +22,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.Math.abs;
+
 
 @Mixin(Explosion.class)
 public abstract class ExplosionMixin {
-    @Shadow @Final private @Nullable Entity source;
-
     @Shadow @Final private Map<Player, Vec3> hitPlayers;
 
     @Accessor("x")
@@ -41,15 +41,15 @@ public abstract class ExplosionMixin {
     public abstract Entity source();
 
     @Unique
-    Vec3 knockBack;
-    @Unique
     double horizontalDistance;
+    @Unique
+    double verticalDistance;
     @Unique
     double distance;
     @Unique
     double horizontalKb(){
         if(horizontalDistance > 6) return 0;
-        if(distance < 1) return 0;
+        if(verticalDistance < 0.7 && horizontalDistance < 1) return 0;
         if(horizontalDistance < 3) return horizontalDistance*0.35;
         return 3*0.35;
     }
@@ -82,10 +82,11 @@ public abstract class ExplosionMixin {
             for (int v = 0; v < list.size(); v++) {
                 Entity instance = list.get(v);
                 if(!instance.ignoreExplosion() && !(instance instanceof LargeFireball)) {
-                    Vec3 playerPos = instance.position();
+                    Vec3 playerPos = instance.position().add(0,1,0);
                     Vec3 diff = playerPos.add(explosionPos.scale(-1));
                     Vec3 origin = instance.getDeltaMovement();
                     horizontalDistance = diff.horizontalDistance();
+                    verticalDistance = abs(diff.y);
                     distance = diff.length();
                     double hKb = horizontalKb();
                     double yKb = verticalKb();
@@ -94,8 +95,10 @@ public abstract class ExplosionMixin {
                     }
                     double xKb = diff.x / horizontalDistance * hKb;
                     double zKb = diff.z / horizontalDistance * hKb;
-                    Vec3 finalSpeed = new Vec3(xKb + origin.x * 5, yKb, zKb + origin.z * 5);
-                    knockBack = finalSpeed.add(origin.scale(-1));
+                    Vec3 finalSpeed = instance instanceof Player
+                            ? new Vec3(xKb + origin.x * 7, yKb, zKb + origin.z * 7)
+                            : new Vec3(xKb,yKb,zKb);
+                    Vec3 knockBack = finalSpeed.add(origin.scale(-1));
                     Vec3 result = origin.add(knockBack);
                     instance.setDeltaMovement(result);
 

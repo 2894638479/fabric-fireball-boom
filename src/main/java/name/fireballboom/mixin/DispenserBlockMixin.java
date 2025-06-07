@@ -1,5 +1,6 @@
 package name.fireballboom.mixin;
 
+import name.fireballboom.FireballBoom;
 import net.minecraft.core.BlockSource;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Position;
@@ -34,23 +35,9 @@ public class DispenserBlockMixin {
             instance.put(itemLike.asItem(), new DefaultDispenseItemBehavior() {
                 @Override
                 public @NotNull ItemStack execute(BlockSource blockSource, ItemStack itemStack) {
-                    Level level = blockSource.getLevel();
-                    Direction direction = blockSource.getBlockState().getValue(DispenserBlock.FACING);
-                    Position spawnPos = DispenserBlock.getDispensePosition(blockSource);
-                    LargeFireball fireball = new LargeFireball(EntityType.FIREBALL,level);
-                    fireball.setOwner(fireball);
-                    Vec3i speed = direction.getNormal();
-                    fireball.xPower = speed.getX() * 0.1;
-                    fireball.yPower = speed.getY() * 0.1;
-                    fireball.zPower = speed.getZ() * 0.1;
-                    fireball.setPos(spawnPos.x(),spawnPos.y(),spawnPos.z());
-                    fireball.setYRot(direction.toYRot());
-                    fireball.setXRot(direction.getStepX() * -90);
-                    level.addFreshEntity(fireball);
-                    itemStack.shrink(1);
+                    FireballBoom.summonFireballFromDispenser(blockSource, itemStack);
                     return itemStack;
                 }
-
                 @Override
                 protected void playSound(BlockSource blockSource) {
                     blockSource.getLevel().levelEvent(1018, blockSource.getPos(), 0);
@@ -59,7 +46,6 @@ public class DispenserBlockMixin {
         } else {
             instance.put(itemLike.asItem(),v);
         }
-
         return null;
     }
 }

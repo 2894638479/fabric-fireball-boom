@@ -1,6 +1,7 @@
 package name.fireballboom.mixin;
 
 import name.fireballboom.FireballBoom;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
@@ -18,9 +19,9 @@ public class ItemMixin {
     @Inject(at = @At("HEAD"), method = "use",cancellable = true)
     void useThrowFireball(Level level, Player player, InteractionHand interactionHand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir){
         ItemStack stack = player.getItemInHand(interactionHand);
-        if(stack.is(Items.FIRE_CHARGE)){
-            FireballBoom.summonFireball(player, interactionHand);
-            cir.setReturnValue(InteractionResultHolder.consume(stack));
+        if(stack.is(Items.FIRE_CHARGE) && player instanceof ServerPlayer){
+            FireballBoom.summonFireballFromPlayer(player, interactionHand);
         }
+        cir.setReturnValue(InteractionResultHolder.consume(stack));
     }
 }

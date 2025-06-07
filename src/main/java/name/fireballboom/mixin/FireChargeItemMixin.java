@@ -1,6 +1,7 @@
 package name.fireballboom.mixin;
 
 import name.fireballboom.FireballBoom;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.FireChargeItem;
@@ -15,9 +16,9 @@ public class FireChargeItemMixin {
 	@Inject(at = @At("HEAD"), method = "useOn",cancellable = true)
 	private void preventUseFireball(UseOnContext useOnContext, CallbackInfoReturnable<InteractionResult> cir) {
 		Player player = useOnContext.getPlayer();
-		if(player != null) {
-			FireballBoom.summonFireball(player, useOnContext.getHand());
-			cir.setReturnValue(InteractionResult.sidedSuccess(useOnContext.getLevel().isClientSide));
+		if(player instanceof ServerPlayer) {
+			FireballBoom.summonFireballFromPlayer(player, useOnContext.getHand());
 		}
+		cir.setReturnValue(InteractionResult.sidedSuccess(useOnContext.getLevel().isClientSide));
 	}
 }

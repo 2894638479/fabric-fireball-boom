@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.signum;
 
 
 @Mixin(Explosion.class)
@@ -64,7 +65,16 @@ public abstract class ExplosionMixin {
         return 1.27;
     }
     @Unique
-    double horizontalKbJumpingScale(){ return 2; }
+    double jumpingHorizontalKbScale(double originSpeed){
+        return 2 * originSpeed;
+    }
+
+    @Unique
+    double playerAccelerationScale(double originSpeed){
+        if(originSpeed < 0.2) return 10 * originSpeed;
+        if(originSpeed < 3.6) return  1.8 + originSpeed;
+        return 1.5 * originSpeed;
+    }
 
     @Inject(
             method = "explode",
@@ -88,26 +98,31 @@ public abstract class ExplosionMixin {
                 if(!instance.ignoreExplosion() && !(instance instanceof LargeFireball)) {
                     Vec3 playerPos = instance.position().add(0, 1, 0);
                     Vec3 diff = playerPos.add(explosionPos.scale(-1));
-                    Vec3 origin = instance.getDeltaMovement();
+                    Vec3 originSpeed = instance.getDeltaMovement();
                     horizontalDistance = diff.horizontalDistance();
                     verticalDistance = abs(diff.y);
                     distance = diff.length();
+                    if(horizontalDistance > 6) {
+                        continue;
+                    }
                     double hKb = horizontalKb();
                     double yKb = verticalKb();
-                    if(hKb == 0 && yKb == 0){
-                        ci.cancel();
-                        return;
-                    }
                     if (!instance.onGround()) {
-                        hKb *= horizontalKbJumpingScale();
+                        hKb = jumpingHorizontalKbScale(hKb);
                     }
-                    double xKb = diff.x / horizontalDistance * hKb;
-                    double zKb = diff.z / horizontalDistance * hKb;
-                    Vec3 finalSpeed = instance instanceof Player
-                            ? new Vec3(xKb + origin.x * 7, yKb, zKb + origin.z * 7)
-                            : new Vec3(xKb,yKb,zKb);
-                    Vec3 knockBack = finalSpeed.add(origin.scale(-1));
-                    Vec3 result = origin.add(knockBack);
+                    double xKb = 0.0;
+                    double zKb = 0.0;
+                    if(horizontalDistance != 0.0){
+                        xKb = diff.x / horizontalDistance * hKb;
+                        zKb = diff.z / horizontalDistance * hKb;
+                    }
+                    if (instance instanceof Player) {
+                        xKb += playerAccelerationScale(abs(originSpeed.x)) * signum(originSpeed.x);
+                        zKb += playerAccelerationScale(abs(originSpeed.z)) * signum(originSpeed.z);
+                    }
+                    Vec3 finalSpeed = new Vec3(xKb,yKb,zKb);
+                    Vec3 knockBack = finalSpeed.add(originSpeed.scale(-1));
+                    Vec3 result = originSpeed.add(knockBack);
                     instance.setDeltaMovement(result);
                     if (instance instanceof ServerPlayer player && !player.isSpectator()){
                         ServerPlayNetworking.send(player,

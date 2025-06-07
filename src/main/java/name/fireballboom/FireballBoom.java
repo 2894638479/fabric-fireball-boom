@@ -7,8 +7,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FireballBoom {
+	public static Logger logger = LoggerFactory.getLogger("fireball-boom");
 	public static void summonFireball(Player player, InteractionHand interactionHand){
 		ItemStack stack = player.getItemInHand(interactionHand);
 		if(stack.is(Items.FIRE_CHARGE) && stack.getCount() > 0){

@@ -19,9 +19,11 @@ public class ItemMixin {
     @Inject(at = @At("HEAD"), method = "use",cancellable = true)
     void useThrowFireball(Level level, Player player, InteractionHand interactionHand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir){
         ItemStack stack = player.getItemInHand(interactionHand);
-        if(stack.is(Items.FIRE_CHARGE) && player instanceof ServerPlayer){
-            FireballBoom.summonFireballFromPlayer(player, interactionHand);
+        if(stack.is(Items.FIRE_CHARGE)){
+            if(player instanceof ServerPlayer) {
+                FireballBoom.summonFireballFromPlayer(player, interactionHand);
+            }
+            cir.setReturnValue(InteractionResultHolder.consume(stack));
         }
-        cir.setReturnValue(InteractionResultHolder.consume(stack));
     }
 }

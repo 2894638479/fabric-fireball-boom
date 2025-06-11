@@ -40,7 +40,10 @@ public class ExplosiveProjectileEntityMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/projectile/ExplosiveProjectileEntity;setPosition(DDD)V")
     )
     void resetPosition(ExplosiveProjectileEntity instance, double x, double y, double z){
-        if(!isFireball(instance)) return;
+        if(!isFireball(instance)) {
+            instance.setPosition(x,y,z);
+            return;
+        }
         Vec3d pos = instance.getPos();
         Vec3d speed = getConstSpeed();
         instance.setVelocity(speed);

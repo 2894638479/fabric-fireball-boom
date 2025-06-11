@@ -1,11 +1,13 @@
 package name.fireballboom.mixin;
 
 import io.netty.buffer.Unpooled;
+import name.fireballboom.HurtAnimationPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FireballEntity;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
@@ -75,6 +77,10 @@ public abstract class ExplosionMixin {
         if(originSpeed < 3.6) return  1.8 + originSpeed;
         return 1.5 * originSpeed;
     }
+    @Unique
+    Explosion asExplosion(){
+        return (Explosion) (Object) this;
+    }
 
     @Inject(
             method = "collectBlocksAndDamageEntities",
@@ -95,7 +101,7 @@ public abstract class ExplosionMixin {
         List<Entity> list = this.world().getOtherEntities(this.entity(), new Box(minX, minY, minZ, maxX, maxY, maxZ));
         for (int v = 0; v < list.size(); v++) {
             Entity instance = list.get(v);
-            if(!instance.isImmuneToExplosion() && !(instance instanceof FireballEntity)) {
+            if(!instance.isImmuneToExplosion(asExplosion()) && !(instance instanceof FireballEntity)) {
                 Vec3d playerPos = instance.getPos().add(0, 1, 0);
                 Vec3d diff = playerPos.add(explosionPos.multiply(-1));
                 Vec3d originSpeed = instance.getVelocity();
@@ -125,9 +131,7 @@ public abstract class ExplosionMixin {
                 Vec3d result = originSpeed.add(knockBack);
                 instance.setVelocity(result);
                 if (instance instanceof ServerPlayerEntity player && !player.isSpectator()){
-                    ServerPlayNetworking.send(player,
-                            new Identifier("fireball-boom","fireball_play_hurt_animation"),
-                            new PacketByteBuf(Unpooled.buffer()));
+                    ServerPlayNetworking.send(player, new HurtAnimationPayload());
                 }
                 if (instance instanceof PlayerEntity player && !player.isSpectator() && (!player.isCreative() || !player.getAbilities().flying)) {
                     affectedPlayers.put(player,knockBack);

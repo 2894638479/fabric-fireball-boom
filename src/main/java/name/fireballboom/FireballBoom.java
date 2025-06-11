@@ -25,26 +25,25 @@ public class FireballBoom implements ModInitializer {
             World level = player.getWorld();
 			Vec3d look = player.getRotationVector();
 			Vec3d spawnPos = player.getEyePos();
-			FireballEntity fireball = new FireballEntity(level,player,look.x,look.y,look.z,6);
+			FireballEntity fireball = new FireballEntity(level,player,look,6);
 			fireball.setPos(spawnPos.x,spawnPos.y,spawnPos.z);
+			fireball.setVelocity(look);
 			level.spawnEntity(fireball);
 			stack.decrement(1);
 		}
 	}
 	public static void summonFireballFromDispenser(BlockPointer blockSource, ItemStack itemStack){
 		if(!itemStack.isOf(Items.FIRE_CHARGE)) return;
-		World level = blockSource.getWorld();
-		Direction direction = blockSource.getBlockState().get(DispenserBlock.FACING);
+		World level = blockSource.world();
+		Direction direction = blockSource.state().get(DispenserBlock.FACING);
 		Position spawnPos = DispenserBlock.getOutputLocation(blockSource);
 		FireballEntity fireball = new FireballEntity(EntityType.FIREBALL,level);
 		fireball.setOwner(fireball);
-		Vec3i speed = direction.getVector();
-		fireball.powerX = speed.getX() * 0.1;
-		fireball.powerY = speed.getY() * 0.1;
-		fireball.powerZ = speed.getZ() * 0.1;
 		fireball.setPosition(spawnPos.getX(),spawnPos.getY(),spawnPos.getZ());
 		fireball.setYaw(direction.asRotation());
 		fireball.setPitch(direction.getOffsetX() * -90);
+		Vec3i velocity = direction.getVector();
+		fireball.setVelocity(velocity.getX(),velocity.getY(),velocity.getZ());
 		level.spawnEntity(fireball);
 		itemStack.decrement(1);
 	}
@@ -57,6 +56,7 @@ public class FireballBoom implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		HurtAnimationPayload.register();
 		FIREBALL_THROW_COOLDOWN = GameRuleRegistry.register(
 				"fireballThrowCooldown",
 				GameRules.Category.PLAYER,

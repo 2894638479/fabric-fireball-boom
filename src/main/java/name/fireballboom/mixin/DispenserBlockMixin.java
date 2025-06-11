@@ -35,7 +35,7 @@ public class DispenserBlockMixin {
                 }
                 @Override
                 protected void playSound(BlockPointer blockPointer) {
-                    blockPointer.getWorld().syncWorldEvent(WorldEvents.BLAZE_SHOOTS, blockPointer.getPos(), 0);
+                    blockPointer.world().syncWorldEvent(WorldEvents.BLAZE_SHOOTS, blockPointer.pos(), 0);
                 }
             });
         } else {

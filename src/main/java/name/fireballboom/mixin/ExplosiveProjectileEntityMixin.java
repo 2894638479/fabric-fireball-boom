@@ -1,5 +1,6 @@
 package name.fireballboom.mixin;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 import net.minecraft.entity.projectile.FireballEntity;
 import net.minecraft.util.math.Vec3d;
@@ -13,13 +14,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ExplosiveProjectileEntity.class)
 public class ExplosiveProjectileEntityMixin {
-    @Shadow public double powerX;
-    @Shadow public double powerY;
-    @Shadow public double powerZ;
 
     @Unique
     Vec3d getConstSpeed(){
-        return new Vec3d(this.powerX, this.powerY, this.powerZ).multiply(15);
+        Entity entity = (ExplosiveProjectileEntity) (Object) this;
+        return entity.getVelocity().normalize().multiply(1.5);
     }
 
     @Unique

@@ -19,6 +19,6 @@ public class FireChargeItemMixin {
 		if(player instanceof ServerPlayerEntity) {
 			FireballBoom.summonFireballFromPlayer(player, context.getHand());
 		}
-		cir.setReturnValue(ActionResult.success(context.getWorld().isClient));
+		cir.setReturnValue(ActionResult.SUCCESS_SERVER);
 	}
 }

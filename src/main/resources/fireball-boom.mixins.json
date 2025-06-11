@@ -5,7 +5,7 @@
   "mixins": [
     "ExplosiveProjectileEntityMixin",
     "DispenserBlockMixin",
-    "ExplosionMixin",
+    "ExplosionImplMixin",
     "FireChargeItemMixin",
     "ItemMixin"
   ],

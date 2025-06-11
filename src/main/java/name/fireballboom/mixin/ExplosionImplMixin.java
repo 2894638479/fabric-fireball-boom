@@ -1,20 +1,18 @@
 package name.fireballboom.mixin;
 
-import io.netty.buffer.Unpooled;
 import name.fireballboom.HurtAnimationPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FireballEntity;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import net.minecraft.world.explosion.Explosion;
+import net.minecraft.world.explosion.ExplosionImpl;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -23,6 +21,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 import java.util.Map;
@@ -32,20 +31,22 @@ import static java.lang.Math.signum;
 import static net.minecraft.util.math.MathHelper.floor;
 
 
-@Mixin(Explosion.class)
-public abstract class ExplosionMixin {
-    @Shadow @Final private Map<PlayerEntity, Vec3d> affectedPlayers;
+@Mixin(ExplosionImpl.class)
+public abstract class ExplosionImplMixin {
+    @Shadow @Final @Nullable private Entity entity;
 
-    @Accessor("x")
-    public abstract double x();
-    @Accessor("y")
-    public abstract double y();
-    @Accessor("z")
-    public abstract double z();
+    @Accessor("knockbackByPlayer")
+    public abstract Map<PlayerEntity, Vec3d> knockBackByPlayer();
+
+    @Accessor("pos")
+    public abstract Vec3d pos();
     @Accessor("world")
-    public abstract World world();
+    public abstract ServerWorld world();
     @Accessor("entity")
     public abstract Entity entity();
+    @Unique double x() { return pos().x; }
+    @Unique double y() { return pos().y; }
+    @Unique double z() { return pos().z; }
 
     @Unique
     double horizontalDistance;
@@ -83,7 +84,18 @@ public abstract class ExplosionMixin {
     }
 
     @Inject(
-            method = "collectBlocksAndDamageEntities",
+            method = "shouldDestroyBlocks",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    void preventBlockDestroy(CallbackInfoReturnable<Boolean> cir){
+        if(entity instanceof FireballEntity) {
+            cir.setReturnValue(false);
+        }
+    }
+
+    @Inject(
+            method = "damageEntities",
             at = @At("HEAD"),
             cancellable = true
     )
@@ -134,7 +146,7 @@ public abstract class ExplosionMixin {
                     ServerPlayNetworking.send(player, new HurtAnimationPayload());
                 }
                 if (instance instanceof PlayerEntity player && !player.isSpectator() && (!player.isCreative() || !player.getAbilities().flying)) {
-                    affectedPlayers.put(player,knockBack);
+                    knockBackByPlayer().put(player,knockBack);
                 }
             }
         }

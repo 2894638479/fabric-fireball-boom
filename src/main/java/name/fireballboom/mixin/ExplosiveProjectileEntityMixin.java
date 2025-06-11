@@ -36,10 +36,13 @@ public class ExplosiveProjectileEntityMixin {
     }
     @Redirect(
             method = "tick",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/projectile/ExplosiveProjectileEntity;setPosition(DDD)V")
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/projectile/ExplosiveProjectileEntity;setPosition(Lnet/minecraft/util/math/Vec3d;)V")
     )
-    void resetPosition(ExplosiveProjectileEntity instance, double x, double y, double z){
-        if(!isFireball(instance)) return;
+    void resetPosition(ExplosiveProjectileEntity instance, Vec3d vec){
+        if(!isFireball(instance)) {
+            instance.setPosition(vec);
+            return;
+        }
         Vec3d pos = instance.getPos();
         Vec3d speed = getConstSpeed();
         instance.setVelocity(speed);

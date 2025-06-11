@@ -18,7 +18,7 @@ import java.util.Map;
 @Mixin(DispenserBlock.class)
 public class DispenserBlockMixin {
     @Redirect(
-            method = "registerBehavior",
+            method = "registerProjectileBehavior",
             at = @At(
                     value = "INVOKE",
                     target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"

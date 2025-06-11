@@ -9,6 +9,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.FireballEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.registry.Registries;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
 import net.minecraft.world.GameRules;
@@ -40,7 +42,7 @@ public class FireballBoom implements ModInitializer {
 		FireballEntity fireball = new FireballEntity(EntityType.FIREBALL,level);
 		fireball.setOwner(fireball);
 		fireball.setPosition(spawnPos.getX(),spawnPos.getY(),spawnPos.getZ());
-		fireball.setYaw(direction.asRotation());
+		fireball.setYaw(direction.getPositiveHorizontalDegrees());
 		fireball.setPitch(direction.getOffsetX() * -90);
 		Vec3i velocity = direction.getVector();
 		fireball.setVelocity(velocity.getX(),velocity.getY(),velocity.getZ());
@@ -48,9 +50,12 @@ public class FireballBoom implements ModInitializer {
 		itemStack.decrement(1);
 	}
 	public static void cooldownFireballItem(PlayerEntity player){
-		int ticks = player.getWorld().getGameRules().getInt(FIREBALL_THROW_COOLDOWN);
-		if(ticks <= 0) return;
-		player.getItemCooldownManager().set(Items.FIRE_CHARGE,ticks);
+		World world = player.getWorld();
+		if(world instanceof ServerWorld){
+			int ticks = ((ServerWorld) world).getGameRules().getInt(FIREBALL_THROW_COOLDOWN);
+			if(ticks <= 0) return;
+			player.getItemCooldownManager().set(Registries.ITEM.getId((Items.FIRE_CHARGE)),ticks);
+		}
 	}
 	public static GameRules.Key<GameRules.IntRule> FIREBALL_THROW_COOLDOWN;
 

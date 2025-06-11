@@ -2,17 +2,18 @@ package name.fireballboom.mixin;
 
 import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.FireballEntity;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-import net.minecraft.world.event.GameEvent;
-import net.minecraft.world.explosion.Explosion;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.LargeFireball;
+import net.minecraft.world.level.Explosion;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,12 +28,11 @@ import java.util.Map;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.signum;
-import static net.minecraft.util.math.MathHelper.floor;
 
 
 @Mixin(Explosion.class)
 public abstract class ExplosionMixin {
-    @Shadow @Final private Map<PlayerEntity, Vec3d> affectedPlayers;
+    @Shadow @Final private Map<Player, Vec3> hitPlayers;
 
     @Accessor("x")
     public abstract double x();
@@ -40,10 +40,10 @@ public abstract class ExplosionMixin {
     public abstract double y();
     @Accessor("z")
     public abstract double z();
-    @Accessor("world")
-    public abstract World world();
-    @Accessor("entity")
-    public abstract Entity entity();
+    @Accessor("level")
+    public abstract Level level();
+    @Accessor("source")
+    public abstract Entity source();
 
     @Unique
     double horizontalDistance;
@@ -77,29 +77,29 @@ public abstract class ExplosionMixin {
     }
 
     @Inject(
-            method = "collectBlocksAndDamageEntities",
+            method = "explode",
             at = @At("HEAD"),
             cancellable = true
     )
     void changeExplosionKnockBack(CallbackInfo ci){
-        if(entity() instanceof FireballEntity) {
-            Vec3d explosionPos = new Vec3d(x(), y(), z());
-            world().emitGameEvent(this.entity(), GameEvent.EXPLODE, explosionPos);
+        if(source() instanceof LargeFireball) {
+            Vec3 explosionPos = new Vec3(x(), y(), z());
+            level().gameEvent(this.source(), GameEvent.EXPLODE, explosionPos);
             float radius = 7f;
-            int minX = floor(this.x() - radius - 1.0);
-            int maxX = floor(this.x() + radius + 1.0);
-            int minY = floor(this.y() - radius - 1.0);
-            int maxY = floor(this.y() + radius + 1.0);
-            int minZ = floor(this.z() - radius - 1.0);
-            int maxZ = floor(this.z() + radius + 1.0);
-            List<Entity> list = this.world().getOtherEntities(this.entity(), new Box(minX, minY, minZ, maxX, maxY, maxZ));
+            int minX = Mth.floor(this.x() - radius - 1.0);
+            int maxX = Mth.floor(this.x() + radius + 1.0);
+            int minY = Mth.floor(this.y() - radius - 1.0);
+            int maxY = Mth.floor(this.y() + radius + 1.0);
+            int minZ = Mth.floor(this.z() - radius - 1.0);
+            int maxZ = Mth.floor(this.z() + radius + 1.0);
+            List<Entity> list = this.level().getEntities(this.source(), new AABB(minX, minY, minZ, maxX, maxY, maxZ));
             for (int v = 0; v < list.size(); v++) {
                 Entity instance = list.get(v);
-                if(!instance.isImmuneToExplosion() && !(instance instanceof FireballEntity)) {
-                    Vec3d playerPos = instance.getPos().add(0, 1, 0);
-                    Vec3d diff = playerPos.add(explosionPos.multiply(-1));
-                    Vec3d originSpeed = instance.getVelocity();
-                    horizontalDistance = diff.horizontalLength();
+                if(!instance.ignoreExplosion() && !(instance instanceof LargeFireball)) {
+                    Vec3 playerPos = instance.position().add(0, 1, 0);
+                    Vec3 diff = playerPos.add(explosionPos.scale(-1));
+                    Vec3 originSpeed = instance.getDeltaMovement();
+                    horizontalDistance = diff.horizontalDistance();
                     verticalDistance = abs(diff.y);
                     distance = diff.length();
                     if(horizontalDistance > 6) {
@@ -107,7 +107,7 @@ public abstract class ExplosionMixin {
                     }
                     double hKb = horizontalKb();
                     double yKb = verticalKb();
-                    if (!instance.isOnGround()) {
+                    if (!instance.onGround()) {
                         hKb = jumpingHorizontalKbScale(hKb);
                     }
                     double xKb = 0.0;
@@ -116,21 +116,21 @@ public abstract class ExplosionMixin {
                         xKb = diff.x / horizontalDistance * hKb;
                         zKb = diff.z / horizontalDistance * hKb;
                     }
-                    if (instance instanceof PlayerEntity) {
+                    if (instance instanceof Player) {
                         xKb += playerAccelerationScale(abs(originSpeed.x)) * signum(originSpeed.x);
                         zKb += playerAccelerationScale(abs(originSpeed.z)) * signum(originSpeed.z);
                     }
-                    Vec3d finalSpeed = new Vec3d(xKb,yKb,zKb);
-                    Vec3d knockBack = finalSpeed.add(originSpeed.multiply(-1));
-                    Vec3d result = originSpeed.add(knockBack);
-                    instance.setVelocity(result);
-                    if (instance instanceof ServerPlayerEntity player && !player.isSpectator()){
+                    Vec3 finalSpeed = new Vec3(xKb,yKb,zKb);
+                    Vec3 knockBack = finalSpeed.add(originSpeed.scale(-1));
+                    Vec3 result = originSpeed.add(knockBack);
+                    instance.setDeltaMovement(result);
+                    if (instance instanceof ServerPlayer player && !player.isSpectator()){
                         ServerPlayNetworking.send(player,
-                                new Identifier("fireball-boom","fireball_play_hurt_animation"),
-                                new PacketByteBuf(Unpooled.buffer()));
+                                new ResourceLocation("fireball-boom","fireball_play_hurt_animation"),
+                                new FriendlyByteBuf(Unpooled.buffer()));
                     }
-                    if (instance instanceof PlayerEntity player && !player.isSpectator() && (!player.isCreative() || !player.getAbilities().flying)) {
-                        affectedPlayers.put(player,knockBack);
+                    if (instance instanceof Player player && !player.isSpectator() && (!player.isCreative() || !player.getAbilities().flying)) {
+                        hitPlayers.put(player,knockBack);
                     }
                 }
             }

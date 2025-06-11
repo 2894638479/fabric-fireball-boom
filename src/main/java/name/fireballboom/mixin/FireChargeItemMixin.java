@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(FireChargeItem.class)
 public class FireChargeItemMixin {
 	@Inject(at = @At("HEAD"), method = "useOnBlock",cancellable = true)
-	private void preventUseFireball(ItemUsageContext context, CallbackInfoReturnable<ActionResult> cir) {
+	private void changeFireballUsage(ItemUsageContext context, CallbackInfoReturnable<ActionResult> cir) {
 		PlayerEntity player = context.getPlayer();
 		if(player instanceof ServerPlayerEntity) {
 			FireballBoom.summonFireballFromPlayer(player, context.getHand());

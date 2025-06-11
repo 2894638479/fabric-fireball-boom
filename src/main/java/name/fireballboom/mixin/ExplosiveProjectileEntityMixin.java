@@ -1,9 +1,11 @@
 package name.fireballboom.mixin;
 
 import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
+import net.minecraft.entity.projectile.FireballEntity;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -15,21 +17,32 @@ public class ExplosiveProjectileEntityMixin {
     @Shadow public double powerY;
     @Shadow public double powerZ;
 
+    @Unique
+    Vec3d getConstSpeed(){
+        return new Vec3d(this.powerX, this.powerY, this.powerZ).multiply(15);
+    }
+
+    @Unique
+    private static boolean isFireball(Object instance){
+        return instance instanceof FireballEntity;
+    }
+
     @Inject(
             method = "tick",
             at = @At("HEAD")
     )
     void resetSpeed(CallbackInfo ci){
-        Vec3d speed = new Vec3d(this.powerX,this.powerY,this.powerZ).multiply(15);
-        ((ExplosiveProjectileEntity)(Object)this).setVelocity(speed);
+        if(!isFireball(this)) return;
+        ((ExplosiveProjectileEntity) (Object) this).setVelocity(getConstSpeed());
     }
     @Redirect(
             method = "tick",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/projectile/ExplosiveProjectileEntity;setPosition(DDD)V")
     )
     void resetPosition(ExplosiveProjectileEntity instance, double x, double y, double z){
+        if(!isFireball(instance)) return;
         Vec3d pos = instance.getPos();
-        Vec3d speed = new Vec3d(instance.powerX,instance.powerY,instance.powerZ).multiply(15);
+        Vec3d speed = getConstSpeed();
         instance.setVelocity(speed);
         instance.setPosition(pos.add(speed));
     }
